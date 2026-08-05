@@ -83,7 +83,10 @@ const externalLogin = function (provider) {
   console.log("Performing external login for provider", provider.Identifier);
   loggingIn.value = true;
   console.log(router.currentRoute.value);
-  const currentUrl = new URL(`${WGPORTAL_BASE_PATH || ''}${import.meta.env.BASE_URL || '/'}`, window.location.origin);
+  // Derive the return URL from the live document location, never from the build-time asset base
+  // (import.meta.env.BASE_URL): the app is mounted at {web.base_path}/app/ in production and at /
+  // under `npm run dev`, so window.location is the only reliable source.
+  const currentUrl = new URL(window.location.href);
   currentUrl.hash = router.currentRoute.value.fullPath;
   let currentUri = currentUrl.toString();
   let redirectUrl = `${WGPORTAL_BACKEND_BASE_URL}${provider.ProviderUrl}`;
