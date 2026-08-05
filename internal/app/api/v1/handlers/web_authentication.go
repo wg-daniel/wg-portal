@@ -16,16 +16,22 @@ const (
 )
 
 type UserAuthenticator interface {
+	IsUserValid(ctx context.Context, id domain.UserIdentifier) bool
+}
+
+type UserRepository interface {
 	GetUser(ctx context.Context, id domain.UserIdentifier) (*domain.User, error)
 }
 
 type AuthenticationHandler struct {
 	authenticator UserAuthenticator
+	userRepo      UserRepository
 }
 
-func NewAuthenticationHandler(authenticator UserAuthenticator) AuthenticationHandler {
+func NewAuthenticationHandler(authenticator UserAuthenticator, userRepo UserRepository) AuthenticationHandler {
 	return AuthenticationHandler{
 		authenticator: authenticator,
+		userRepo:      userRepo,
 	}
 }
 
@@ -44,7 +50,7 @@ func (h AuthenticationHandler) LoggedIn(scopes ...Scope) func(next http.Handler)
 			// check if user exists in DB
 
 			ctx := domain.SetUserInfo(r.Context(), domain.SystemAdminContextUserInfo())
-			user, err := h.authenticator.GetUser(ctx, domain.UserIdentifier(username))
+			user, err := h.userRepo.GetUser(ctx, domain.UserIdentifier(username))
 			if err != nil {
 				// Abort the request with the appropriate error code
 				respond.JSON(w, http.StatusUnauthorized,
@@ -57,6 +63,13 @@ func (h AuthenticationHandler) LoggedIn(scopes ...Scope) func(next http.Handler)
 				// Abort the request with the appropriate error code
 				respond.JSON(w, http.StatusUnauthorized,
 					model.Error{Code: http.StatusUnauthorized, Message: "invalid credentials"})
+				return
+			}
+
+			// ensure that user is still valid
+			if valid := h.authenticator.IsUserValid(r.Context(), domain.UserIdentifier(user.Identifier)); !valid {
+				respond.JSON(w, http.StatusForbidden,
+					model.Error{Code: http.StatusForbidden, Message: "account disabled or locked"})
 				return
 			}
 
