@@ -208,6 +208,8 @@ func (e AuthEndpoint) handleOauthInitiateGet() http.HandlerFunc {
 
 		if returnTo != "" {
 			if !e.isValidReturnUrl(returnTo) {
+				slog.Debug("rejected invalid oauth return URL",
+					"provider", provider, "returnTo", returnTo, "expectedPrefix", e.frontendUrl(""))
 				respond.JSON(w, http.StatusBadRequest,
 					model.Error{Code: http.StatusBadRequest, Message: "invalid return URL"})
 				return
