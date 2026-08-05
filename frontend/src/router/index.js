@@ -6,10 +6,10 @@ import {authStore} from '@/stores/auth'
 import {securityStore} from '@/stores/security'
 import {notify} from "@kyvg/vue3-notification";
 
-const routerBase = `${WGPORTAL_BASE_PATH || ''}${import.meta.env.BASE_URL || '/'}`
-
 const router = createRouter({
-  history: createWebHashHistory(routerBase),
+  // No base argument: createWebHashHistory() defaults to location.pathname + location.search,
+  // which is correct for /app/, {web.base_path}/app/ and the dev server at /.
+  history: createWebHashHistory(),
   routes: [
     {
       path: '/',
